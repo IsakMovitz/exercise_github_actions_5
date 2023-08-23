@@ -18,6 +18,8 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
+    outputs:          # different from artifacts
+      script-file: ${{ steps.publish_step.outputs.my_output_file}}  
     steps:
       - name: Get code
         uses: actions/checkout@v3
@@ -25,11 +27,17 @@ jobs:
         run: npm ci
       - name: Build website
         run: npm run build
+      - name: Publish js filename
+        id: publish_step
+        run: find dist/assets/*.js -type f -execdir echo 'my_output_file={}' >> $GITHUB_OUTPUT ';'  # other syntax --> '::set-output name=my_output_file::{}' 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist-files
-          path: dist 
+          path: dist
+        # path: |
+        #   dist
+        #   package.json 
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -39,6 +47,6 @@ jobs:
         with:
           name: dist-files
       - name: Output contents
-        run: ls
+        run: echo "${{ needs.build.outputs.script_file}}"
       - name: Deploy
         run: echo "Deploying..."
